@@ -7,6 +7,8 @@ add_library(gte_engine
     src/coord_transform.cpp
     src/gpio_interface.cpp
     src/mount.cpp
+    src/stepper_axis.cpp
+    src/stepper_mount.cpp
     src/time_utils.cpp
     src/tracking_loop.cpp
 )
@@ -70,6 +72,21 @@ target_link_libraries(gpio_tests
 
 add_test(NAME gpio_tests COMMAND gpio_tests)
 set_tests_properties(gpio_tests
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(stepper_tests
+    tests/stepper_tests.cpp
+)
+
+target_link_libraries(stepper_tests
+    PRIVATE
+        gte_engine
+)
+
+add_test(NAME stepper_tests COMMAND stepper_tests)
+set_tests_properties(stepper_tests
     PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
