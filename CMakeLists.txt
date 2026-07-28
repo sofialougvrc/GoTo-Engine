@@ -8,6 +8,7 @@ add_library(gte_engine
     src/gpio_interface.cpp
     src/lgpio_gpio.cpp
     src/mount.cpp
+    src/soft_limits.cpp
     src/step_calibration.cpp
     src/step_scheduler.cpp
     src/stepper_axis.cpp
@@ -115,6 +116,21 @@ target_link_libraries(step_scheduler_tests
 
 add_test(NAME step_scheduler_tests COMMAND step_scheduler_tests)
 set_tests_properties(step_scheduler_tests
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(soft_limits_tests
+    tests/soft_limits_tests.cpp
+)
+
+target_link_libraries(soft_limits_tests
+    PRIVATE
+        gte_engine
+)
+
+add_test(NAME soft_limits_tests COMMAND soft_limits_tests)
+set_tests_properties(soft_limits_tests
     PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

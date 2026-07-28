@@ -2,11 +2,13 @@
 
 #include "gte/gpio_interface.hpp"
 #include "gte/mount.hpp"
+#include "gte/soft_limits.hpp"
 #include "gte/step_calibration.hpp"
 #include "gte/step_scheduler.hpp"
 #include "gte/stepper_axis.hpp"
 
 #include <chrono>
+#include <optional>
 
 namespace gte {
 
@@ -24,6 +26,7 @@ struct StepperMountConfig {
     MountStepCalibration calibration;
     std::chrono::duration<double> tracking_update_period{1.0};
     std::chrono::microseconds pulse_width{50};
+    std::optional<MountSoftLimits> soft_limits;
 };
 
 class StepperMount : public IMountDriver {
@@ -45,6 +48,7 @@ public:
 
 private:
     StepSchedulerTargets angleTargets(double alt_deg, double az_deg) const;
+    void validateSoftLimits(StepSchedulerTargets targets) const;
     StepSchedulerRates ratesForTarget(StepSchedulerTargets targets) const;
 
     StepperMountConfig config_;

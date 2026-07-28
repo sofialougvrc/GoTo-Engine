@@ -40,7 +40,9 @@ void StepperMount::disable() {
 }
 
 void StepperMount::slewTo(double alt_deg, double az_deg) {
-    scheduler_.moveToStepTargetsBlocking(angleTargets(alt_deg, az_deg));
+    const StepSchedulerTargets targets = angleTargets(alt_deg, az_deg);
+    validateSoftLimits(targets);
+    scheduler_.moveToStepTargetsBlocking(targets);
 }
 
 void StepperMount::track(double alt_deg, double az_deg) {
@@ -50,6 +52,7 @@ void StepperMount::track(double alt_deg, double az_deg) {
     }
 
     const StepSchedulerTargets targets = angleTargets(alt_deg, az_deg);
+    validateSoftLimits(targets);
     scheduler_.start();
     scheduler_.moveToTargetsAtRates(targets, ratesForTarget(targets));
 }
@@ -83,6 +86,12 @@ StepSchedulerTargets StepperMount::angleTargets(double alt_deg, double az_deg) c
         config_.calibration.altitude.degreesToSteps(alt_deg),
         config_.calibration.azimuth.degreesToSteps(az_deg),
     };
+}
+
+void StepperMount::validateSoftLimits(StepSchedulerTargets targets) const {
+    if (config_.soft_limits.has_value()) {
+        config_.soft_limits->validate(targets);
+    }
 }
 
 StepSchedulerRates StepperMount::ratesForTarget(StepSchedulerTargets targets) const {
