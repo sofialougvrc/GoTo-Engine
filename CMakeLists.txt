@@ -3,11 +3,13 @@ cmake_minimum_required(VERSION 3.16)
 project(goto_telescope_engine LANGUAGES CXX)
 
 add_library(gte_engine
+    src/camera_capture.cpp
     src/catalog.cpp
     src/coord_transform.cpp
     src/gpio_interface.cpp
     src/lgpio_gpio.cpp
     src/mount.cpp
+    src/plate_solver.cpp
     src/soft_limits.cpp
     src/step_calibration.cpp
     src/step_scheduler.cpp
@@ -131,6 +133,21 @@ target_link_libraries(soft_limits_tests
 
 add_test(NAME soft_limits_tests COMMAND soft_limits_tests)
 set_tests_properties(soft_limits_tests
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(plate_solver_tests
+    tests/plate_solver_tests.cpp
+)
+
+target_link_libraries(plate_solver_tests
+    PRIVATE
+        gte_engine
+)
+
+add_test(NAME plate_solver_tests COMMAND plate_solver_tests)
+set_tests_properties(plate_solver_tests
     PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
