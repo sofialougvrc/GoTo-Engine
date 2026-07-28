@@ -1,10 +1,27 @@
 #include "gte/stepper_mount.hpp"
 
 namespace gte {
+namespace {
 
-StepperMount::StepperMount(StepperAxis& altitude_axis, StepperAxis& azimuth_axis)
-    : altitude_axis_(altitude_axis),
-      azimuth_axis_(azimuth_axis) {}
+StepperAxisConfig makeAxisConfig(
+    const StepperMountAxisPins& pins,
+    const AxisStepCalibration& calibration) {
+    return {
+        .step_pin = pins.step_pin,
+        .direction_pin = pins.direction_pin,
+        .enable_pin = pins.enable_pin,
+        .steps_per_degree = calibration.stepsPerDegree(),
+        .enable_active_low = pins.enable_active_low,
+        .positive_direction_high = pins.positive_direction_high,
+    };
+}
+
+} // namespace
+
+StepperMount::StepperMount(GpioInterface& gpio, StepperMountConfig config)
+    : config_(config),
+      altitude_axis_(gpio, makeAxisConfig(config_.altitude_pins, config_.calibration.altitude)),
+      azimuth_axis_(gpio, makeAxisConfig(config_.azimuth_pins, config_.calibration.azimuth)) {}
 
 void StepperMount::initialize() {
     altitude_axis_.initialize();
@@ -31,6 +48,18 @@ HorizontalCoord StepperMount::currentPosition() const {
         altitude_axis_.currentAngleDeg(),
         azimuth_axis_.currentAngleDeg(),
     };
+}
+
+const StepperAxis& StepperMount::altitudeAxis() const {
+    return altitude_axis_;
+}
+
+const StepperAxis& StepperMount::azimuthAxis() const {
+    return azimuth_axis_;
+}
+
+const StepperMountConfig& StepperMount::config() const {
+    return config_;
 }
 
 } // namespace gte

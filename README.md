@@ -24,6 +24,8 @@ just internal tests.
 - Full Messier catalog (110 objects) loading correctly
 - Virtual mount + tracking loop producing monotonic movement over
   simulated time
+- GPIO-backed stepper mount layer tested with fake GPIO call logs
+- TMC2209 UART config serialization tested with fake UART writes
 - CLI live-tracks a real object end to end:
   `goto-engine track M42 --lat 38.9072 --lon -77.0369 --ticks 2`
 
@@ -44,8 +46,36 @@ Full design notes in [docs/PLAN.md](docs/PLAN.md).
 - [x] Virtual mount + tracking loop
 - [x] CLI target selection + live tracking
 - [x] Test suite validated against USNO reference values
-- [ ] Stepper mount (real hardware — blocked on parts)
+- [x] Stepper mount software backend with fake GPIO tests
+- [x] Real Pi GPIO backend scaffold using lgpio
+- [ ] Hardware validation on Raspberry Pi + TMC2209 + motors
 - [ ] Plate solving (camera-based self-calibration — blocked on hardware)
 
 ## Stack
 C++20, GoogleTest · nlohmann/json (catalog data)
+
+## Raspberry Pi GPIO
+The real GPIO backend is `gte::LgpioGpio`, which implements the same
+`GpioInterface` used by `FakeGpio`. On Raspberry Pi OS, install lgpio:
+
+```bash
+sudo apt update
+sudo apt install liblgpio-dev
+```
+
+CMake auto-enables the backend when it finds `lgpio.h` and `liblgpio`:
+
+```bash
+cmake -S . -B work/cmake-build
+cmake --build work/cmake-build
+```
+
+For the Makefile path on the Pi:
+
+```bash
+make test LGPIO_CXXFLAGS=-DGTE_ENABLE_LGPIO LGPIO_LIBS=-llgpio
+```
+
+Pass the GPIO chip number when constructing `LgpioGpio`; Raspberry Pi 5
+systems commonly use `/dev/gpiochip4`, but some newer setups expose the
+40-pin header on `/dev/gpiochip0`.

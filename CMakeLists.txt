@@ -6,6 +6,7 @@ add_library(gte_engine
     src/catalog.cpp
     src/coord_transform.cpp
     src/gpio_interface.cpp
+    src/lgpio_gpio.cpp
     src/mount.cpp
     src/step_calibration.cpp
     src/stepper_axis.cpp
@@ -22,6 +23,14 @@ target_include_directories(gte_engine
 )
 
 target_compile_features(gte_engine PUBLIC cxx_std_20)
+
+find_path(LGPIO_INCLUDE_DIR lgpio.h)
+find_library(LGPIO_LIBRARY lgpio)
+if(LGPIO_INCLUDE_DIR AND LGPIO_LIBRARY)
+    target_compile_definitions(gte_engine PUBLIC GTE_ENABLE_LGPIO=1)
+    target_include_directories(gte_engine PRIVATE ${LGPIO_INCLUDE_DIR})
+    target_link_libraries(gte_engine PUBLIC ${LGPIO_LIBRARY})
+endif()
 
 add_executable(goto-engine
     src/goto_engine_cli.cpp
