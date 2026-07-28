@@ -3,7 +3,10 @@
 #include "gte/gpio_interface.hpp"
 #include "gte/mount.hpp"
 #include "gte/step_calibration.hpp"
+#include "gte/step_scheduler.hpp"
 #include "gte/stepper_axis.hpp"
+
+#include <chrono>
 
 namespace gte {
 
@@ -19,6 +22,8 @@ struct StepperMountConfig {
     StepperMountAxisPins altitude_pins;
     StepperMountAxisPins azimuth_pins;
     MountStepCalibration calibration;
+    std::chrono::duration<double> tracking_update_period{1.0};
+    std::chrono::microseconds pulse_width{50};
 };
 
 class StepperMount : public IMountDriver {
@@ -30,16 +35,20 @@ public:
     void disable();
 
     void slewTo(double alt_deg, double az_deg) override;
+    void track(double alt_deg, double az_deg) override;
     HorizontalCoord currentPosition() const override;
 
-    const StepperAxis& altitudeAxis() const;
-    const StepperAxis& azimuthAxis() const;
+    StepSchedulerTargets currentStepPosition() const;
     const StepperMountConfig& config() const;
+    StepScheduler& scheduler();
+    const StepScheduler& scheduler() const;
 
 private:
+    StepSchedulerTargets angleTargets(double alt_deg, double az_deg) const;
+    StepSchedulerRates ratesForTarget(StepSchedulerTargets targets) const;
+
     StepperMountConfig config_;
-    StepperAxis altitude_axis_;
-    StepperAxis azimuth_axis_;
+    StepScheduler scheduler_;
 };
 
 } // namespace gte

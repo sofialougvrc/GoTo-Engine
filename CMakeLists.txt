@@ -9,6 +9,7 @@ add_library(gte_engine
     src/lgpio_gpio.cpp
     src/mount.cpp
     src/step_calibration.cpp
+    src/step_scheduler.cpp
     src/stepper_axis.cpp
     src/stepper_mount.cpp
     src/time_utils.cpp
@@ -99,6 +100,21 @@ target_link_libraries(stepper_tests
 
 add_test(NAME stepper_tests COMMAND stepper_tests)
 set_tests_properties(stepper_tests
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(step_scheduler_tests
+    tests/step_scheduler_tests.cpp
+)
+
+target_link_libraries(step_scheduler_tests
+    PRIVATE
+        gte_engine
+)
+
+add_test(NAME step_scheduler_tests COMMAND step_scheduler_tests)
+set_tests_properties(step_scheduler_tests
     PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

@@ -32,7 +32,7 @@ void TrackingLoop::tickAt(std::chrono::system_clock::time_point utc) {
     const HorizontalCoord horizontal =
         equatorialToHorizontal(target_, observer_lat_, lst);
 
-    mount_.slewTo(horizontal.alt_deg, horizontal.az_deg);
+    mount_.track(horizontal.alt_deg, horizontal.az_deg);
 }
 
 } // namespace gte

@@ -20,46 +20,78 @@ StepperAxisConfig makeAxisConfig(
 
 StepperMount::StepperMount(GpioInterface& gpio, StepperMountConfig config)
     : config_(config),
-      altitude_axis_(gpio, makeAxisConfig(config_.altitude_pins, config_.calibration.altitude)),
-      azimuth_axis_(gpio, makeAxisConfig(config_.azimuth_pins, config_.calibration.azimuth)) {}
+      scheduler_(gpio, {
+          .altitude_axis = makeAxisConfig(config_.altitude_pins, config_.calibration.altitude),
+          .azimuth_axis = makeAxisConfig(config_.azimuth_pins, config_.calibration.azimuth),
+          .pulse_width = config_.pulse_width,
+      }) {}
 
 void StepperMount::initialize() {
-    altitude_axis_.initialize();
-    azimuth_axis_.initialize();
+    scheduler_.initialize();
+    scheduler_.start();
 }
 
 void StepperMount::enable() {
-    altitude_axis_.enable();
-    azimuth_axis_.enable();
+    scheduler_.enable();
 }
 
 void StepperMount::disable() {
-    altitude_axis_.disable();
-    azimuth_axis_.disable();
+    scheduler_.disable();
 }
 
 void StepperMount::slewTo(double alt_deg, double az_deg) {
-    altitude_axis_.moveToAngleDeg(alt_deg);
-    azimuth_axis_.moveToAngleDeg(az_deg);
+    scheduler_.moveToStepTargetsBlocking(angleTargets(alt_deg, az_deg));
+}
+
+void StepperMount::track(double alt_deg, double az_deg) {
+    if (config_.tracking_update_period.count() <= 0.0) {
+        slewTo(alt_deg, az_deg);
+        return;
+    }
+
+    const StepSchedulerTargets targets = angleTargets(alt_deg, az_deg);
+    scheduler_.start();
+    scheduler_.moveToTargetsAtRates(targets, ratesForTarget(targets));
 }
 
 HorizontalCoord StepperMount::currentPosition() const {
+    const StepSchedulerTargets steps = scheduler_.currentSteps();
     return {
-        altitude_axis_.currentAngleDeg(),
-        azimuth_axis_.currentAngleDeg(),
+        static_cast<double>(steps.altitude_step) / config_.calibration.altitude.stepsPerDegree(),
+        static_cast<double>(steps.azimuth_step) / config_.calibration.azimuth.stepsPerDegree(),
     };
 }
 
-const StepperAxis& StepperMount::altitudeAxis() const {
-    return altitude_axis_;
-}
-
-const StepperAxis& StepperMount::azimuthAxis() const {
-    return azimuth_axis_;
+StepSchedulerTargets StepperMount::currentStepPosition() const {
+    return scheduler_.currentSteps();
 }
 
 const StepperMountConfig& StepperMount::config() const {
     return config_;
+}
+
+StepScheduler& StepperMount::scheduler() {
+    return scheduler_;
+}
+
+const StepScheduler& StepperMount::scheduler() const {
+    return scheduler_;
+}
+
+StepSchedulerTargets StepperMount::angleTargets(double alt_deg, double az_deg) const {
+    return {
+        config_.calibration.altitude.degreesToSteps(alt_deg),
+        config_.calibration.azimuth.degreesToSteps(az_deg),
+    };
+}
+
+StepSchedulerRates StepperMount::ratesForTarget(StepSchedulerTargets targets) const {
+    const StepSchedulerTargets current = scheduler_.currentSteps();
+    const double seconds = config_.tracking_update_period.count();
+    return {
+        static_cast<double>(targets.altitude_step - current.altitude_step) / seconds,
+        static_cast<double>(targets.azimuth_step - current.azimuth_step) / seconds,
+    };
 }
 
 } // namespace gte

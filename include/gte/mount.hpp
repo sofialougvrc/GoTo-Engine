@@ -7,6 +7,7 @@ namespace gte {
 class IMountDriver {
 public:
     virtual void slewTo(double alt_deg, double az_deg) = 0;
+    virtual void track(double alt_deg, double az_deg) { slewTo(alt_deg, az_deg); }
     virtual HorizontalCoord currentPosition() const = 0;
     virtual ~IMountDriver() = default;
 };

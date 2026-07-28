@@ -10,6 +10,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -184,8 +185,8 @@ int main() {
     mount.slewTo(1.2, 2.0);
     const auto& mount_forward_calls = mount_gpio.calls();
     ok &= expectTrue("Stepper mount direct slew emits expected call count", mount_forward_calls.size() == 48);
-    ok &= expectTrue("Stepper mount altitude step target", mount.altitudeAxis().currentStep() == 12);
-    ok &= expectTrue("Stepper mount azimuth step target", mount.azimuthAxis().currentStep() == 10);
+    ok &= expectTrue("Stepper mount altitude step target", mount.currentStepPosition().altitude_step == 12);
+    ok &= expectTrue("Stepper mount azimuth step target", mount.currentStepPosition().azimuth_step == 10);
     ok &= expectNear("Stepper mount current altitude", mount.currentPosition().alt_deg, 1.2, 1.0e-12);
     ok &= expectNear("Stepper mount current azimuth", mount.currentPosition().az_deg, 2.0, 1.0e-12);
     ok &= expectTrue("Stepper mount enables altitude axis", countWrites(mount_forward_calls, 22, false) == 1);
@@ -201,8 +202,8 @@ int main() {
     mount.slewTo(0.7, 1.0);
     const auto& mount_backward_calls = mount_gpio.calls();
     ok &= expectTrue("Stepper mount backward slew emits expected call count", mount_backward_calls.size() == 22);
-    ok &= expectTrue("Stepper mount altitude can move backward", mount.altitudeAxis().currentStep() == 7);
-    ok &= expectTrue("Stepper mount azimuth can move backward", mount.azimuthAxis().currentStep() == 5);
+    ok &= expectTrue("Stepper mount altitude can move backward", mount.currentStepPosition().altitude_step == 7);
+    ok &= expectTrue("Stepper mount azimuth can move backward", mount.currentStepPosition().azimuth_step == 5);
     ok &= expectNear("Stepper mount updated altitude", mount.currentPosition().alt_deg, 0.7, 1.0e-12);
     ok &= expectNear("Stepper mount updated azimuth", mount.currentPosition().az_deg, 1.0, 1.0e-12);
     ok &= expectTrue("Stepper mount does not re-enable altitude axis", countWrites(mount_backward_calls, 22, false) == 0);
@@ -242,6 +243,8 @@ int main() {
             .enable_pin = 52,
         },
         .calibration = tracking_calibration,
+        .tracking_update_period = std::chrono::duration<double>{0.2},
+        .pulse_width = std::chrono::microseconds{0},
     });
     tracking_mount.initialize();
     tracking_gpio.clearCalls();
@@ -251,6 +254,8 @@ int main() {
     gte::TrackingLoop tracking_loop(tracking_mount, 0.0, 0.0);
     tracking_loop.trackObject({.ra_deg = lst, .dec_deg = 0.0});
     tracking_loop.tickAt(tracking_time);
+    std::this_thread::sleep_for(std::chrono::milliseconds{300});
+    tracking_mount.scheduler().stop();
 
     const auto& tracking_calls = tracking_gpio.calls();
     ok &= expectNear("Stepper mount tracking altitude", tracking_mount.currentPosition().alt_deg, 90.0, 1.0e-12);
@@ -259,8 +264,8 @@ int main() {
     ok &= expectTrue("Tracking loop emits ninety altitude high pulses", countWrites(tracking_calls, 40, true) == 90);
     ok &= expectTrue("Tracking loop emits ninety altitude low pulses", countWrites(tracking_calls, 40, false) == 90);
     ok &= expectTrue("Tracking loop does not move azimuth axis at zenith", countWrites(tracking_calls, 50, true) == 0);
-    ok &= expectTrue("Tracking StepperMount stores altitude steps", tracking_mount.altitudeAxis().currentStep() == 90);
-    ok &= expectTrue("Tracking StepperMount stores azimuth steps", tracking_mount.azimuthAxis().currentStep() == 0);
+    ok &= expectTrue("Tracking StepperMount stores altitude steps", tracking_mount.currentStepPosition().altitude_step == 90);
+    ok &= expectTrue("Tracking StepperMount stores azimuth steps", tracking_mount.currentStepPosition().azimuth_step == 0);
 
     if (ok) {
         std::cout << "All stepper tests passed\n";
