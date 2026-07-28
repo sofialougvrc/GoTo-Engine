@@ -5,6 +5,7 @@ project(goto_telescope_engine LANGUAGES CXX)
 add_library(gte_engine
     src/catalog.cpp
     src/coord_transform.cpp
+    src/gpio_interface.cpp
     src/mount.cpp
     src/time_utils.cpp
     src/tracking_loop.cpp
@@ -54,6 +55,21 @@ target_link_libraries(engine_tests
 
 add_test(NAME engine_tests COMMAND engine_tests)
 set_tests_properties(engine_tests
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(gpio_tests
+    tests/gpio_tests.cpp
+)
+
+target_link_libraries(gpio_tests
+    PRIVATE
+        gte_engine
+)
+
+add_test(NAME gpio_tests COMMAND gpio_tests)
+set_tests_properties(gpio_tests
     PROPERTIES
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
